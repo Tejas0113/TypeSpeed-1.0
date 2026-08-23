@@ -1,0 +1,6 @@
+{
+  "name": "TypeSpeed",
+  "description": "A modern, fast, and responsive typing speed and accuracy testing website.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
