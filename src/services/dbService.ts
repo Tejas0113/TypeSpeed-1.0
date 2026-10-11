@@ -132,6 +132,30 @@ export const dbService = {
   },
 
   /**
+   * Fetch full test history for a specific user
+   */
+  async getUserFullHistory(userId: string, limit = 100): Promise<DbTestResult[]> {
+    if (!isSupabaseConfigured) return [];
+    try {
+      const { data, error } = await supabase
+        .from('test_results')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching full history:', error.message);
+        return [];
+      }
+      return (data || []) as DbTestResult[];
+    } catch (err) {
+      console.warn('Failed to fetch full history', err);
+      return [];
+    }
+  },
+
+  /**
    * Fetch Global Leaderboard
    */
   async getLeaderboard(duration?: number, limit = 50): Promise<LeaderboardEntry[]> {

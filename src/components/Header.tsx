@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Keyboard, Trophy, Award, User, LogOut, LogIn, ChevronDown, Edit3, Check, X } from 'lucide-react';
+import { Keyboard, Trophy, Award, User, LogOut, LogIn, ChevronDown, Edit3, Check, X, History, Zap, Home } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { PersonalBest } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,14 +7,16 @@ import { dbService } from '../services/dbService';
 
 interface HeaderProps {
   personalBest?: PersonalBest;
-  onScrollToTest?: () => void;
+  activeView?: 'home' | 'test' | 'history';
+  onViewChange?: (view: 'home' | 'test' | 'history') => void;
   onOpenLeaderboard?: () => void;
   onOpenAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   personalBest,
-  onScrollToTest,
+  activeView = 'home',
+  onViewChange,
   onOpenLeaderboard,
   onOpenAuth,
 }) => {
@@ -37,14 +39,6 @@ export const Header: React.FC<HeaderProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.preventDefault();
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   // Prioritize Google full name or clean username
   const googleName = user?.user_metadata?.full_name || user?.user_metadata?.name;
@@ -87,6 +81,13 @@ export const Header: React.FC<HeaderProps> = ({
     setIsSavingUsername(false);
   };
 
+  const handleBrandClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onViewChange) {
+      onViewChange(user ? 'test' : 'home');
+    }
+  };
+
   return (
     <header
       id="main-header"
@@ -96,14 +97,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand */}
         <a
           id="header-brand-link"
-          href="#typing-test-section"
-          onClick={(e) => {
-            if (onScrollToTest) {
-              e.preventDefault();
-              onScrollToTest();
-            }
-          }}
-          className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg px-1 py-0.5"
+          href="#home"
+          onClick={handleBrandClick}
+          className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg px-1 py-0.5 cursor-pointer"
         >
           <div className="w-9 h-9 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 flex items-center justify-center shadow-xs transition-transform group-hover:scale-105">
             <Keyboard className="w-5 h-5" />
@@ -118,31 +114,43 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Navigation Links */}
         <nav className="flex items-center gap-2 sm:gap-4" aria-label="Main Navigation">
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-600 dark:text-neutral-400 mr-2">
-            <a
-              id="nav-link-test"
-              href="#typing-test-section"
-              onClick={(e) => scrollToSection(e, 'typing-test-section')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors"
+          <div className="hidden md:flex items-center gap-1 text-sm font-medium mr-2">
+            <button
+              onClick={() => onViewChange && onViewChange('home')}
+              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                activeView === 'home'
+                  ? 'text-neutral-900 dark:text-white font-semibold bg-neutral-200/50 dark:bg-neutral-800/50'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
             >
-              Test
-            </a>
-            <a
-              id="nav-link-how-it-works"
-              href="#how-it-works"
-              onClick={(e) => scrollToSection(e, 'how-it-works')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors"
+              Home
+            </button>
+
+            <button
+              onClick={() => onViewChange && onViewChange('test')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeView === 'test'
+                  ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
             >
-              How It Works
-            </a>
-            <a
-              id="nav-link-faq"
-              href="#faq"
-              onClick={(e) => scrollToSection(e, 'faq')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors"
-            >
-              FAQ
-            </a>
+              <Zap className="w-3.5 h-3.5" />
+              <span>Typing Arena</span>
+            </button>
+
+            {user && (
+              <button
+                onClick={() => onViewChange && onViewChange('history')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  activeView === 'history'
+                    ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>My History</span>
+              </button>
+            )}
           </div>
 
           {/* Leaderboard Button */}
@@ -212,14 +220,14 @@ export const Header: React.FC<HeaderProps> = ({
                           <button
                             onClick={handleSaveUsername}
                             disabled={isSavingUsername}
-                            className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
+                            className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 cursor-pointer"
                             title="Save username"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setIsEditingUsername(false)}
-                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
                             title="Cancel"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -237,13 +245,37 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                         <button
                           onClick={handleStartEdit}
-                          className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
+                          className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors cursor-pointer"
                           title="Change username"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Navigation Links inside Dropdown */}
+                  <div className="py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        onViewChange && onViewChange('test');
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Typing Arena</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        onViewChange && onViewChange('history');
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <History className="w-3.5 h-3.5 text-blue-500" />
+                      <span>My History & Stats</span>
+                    </button>
                   </div>
 
                   {personalBest && (
