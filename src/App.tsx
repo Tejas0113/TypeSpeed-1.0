@@ -61,7 +61,13 @@ function MainLayout() {
                   Instant Practice Preview
                 </span>
               </div>
-              <TypingTest onOpenAuth={handleOpenAuth} />
+              <TypingTest
+                onOpenAuth={handleOpenAuth}
+                onViewHistory={() => {
+                  setActiveView('history');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
             </div>
             <HowItWorks />
             <FAQ />
@@ -78,7 +84,13 @@ function MainLayout() {
               onOpenLeaderboard={() => setLeaderboardOpen(true)}
             />
             {/* Core Typing Station */}
-            <TypingTest onOpenAuth={handleOpenAuth} />
+            <TypingTest
+              onOpenAuth={handleOpenAuth}
+              onViewHistory={() => {
+                setActiveView('history');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           </div>
         )}
 

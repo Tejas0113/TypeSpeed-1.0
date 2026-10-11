@@ -138,19 +138,17 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Typing Arena</span>
             </button>
 
-            {user && (
-              <button
-                onClick={() => onViewChange && onViewChange('history')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeView === 'history'
-                    ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                <span>My History</span>
-              </button>
-            )}
+            <button
+              onClick={() => onViewChange && onViewChange('history')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeView === 'history'
+                  ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>{user ? 'My History' : 'History'}</span>
+            </button>
           </div>
 
           {/* Leaderboard Button */}

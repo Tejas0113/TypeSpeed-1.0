@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { dbService } from '../services/dbService';
 import { DbTestResult } from '../types/database';
+import { getTestHistory } from '../utils/storage';
 
 interface UserHistoryProps {
   onBackToTest: () => void;
@@ -29,13 +30,47 @@ export const UserHistory: React.FC<UserHistoryProps> = ({ onBackToTest, onOpenAu
   const [selectedDuration, setSelectedDuration] = useState<number | undefined>(undefined);
 
   const loadHistory = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
-      const records = await dbService.getUserFullHistory(user.id, 100);
+      let records: DbTestResult[] = [];
+      if (user) {
+        records = await dbService.getUserFullHistory(user.id, 100);
+      }
+
+      // Merge with localStorage tests so any freshly completed test is immediately visible
+      const localHistory = getTestHistory();
+      if (localHistory.length > 0) {
+        const existingIds = new Set(records.map((r) => r.id));
+        const missingLocal: DbTestResult[] = localHistory
+          .filter((l) => {
+            if (existingIds.has(l.id)) return false;
+            // Also deduplicate if same wpm and time within 5 seconds
+            const matchInDb = records.some(
+              (r) =>
+                Math.abs(new Date(r.created_at).getTime() - l.timestamp) < 5000 &&
+                r.wpm === l.wpm &&
+                r.duration === l.duration
+            );
+            return !matchInDb;
+          })
+          .map((l) => ({
+            id: l.id,
+            user_id: user?.id || 'guest',
+            wpm: l.wpm,
+            raw_wpm: l.wpm,
+            accuracy: l.accuracy,
+            duration: l.duration,
+            correct_chars: Math.round((l.wpm * 5 * l.duration) / 60),
+            incorrect_chars: 0,
+            errors: 0,
+            created_at: new Date(l.timestamp).toISOString(),
+          }));
+
+        records = [...records, ...missingLocal].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+
       setHistory(records);
     } catch (err) {
       console.error('Failed to load history', err);
@@ -66,42 +101,10 @@ export const UserHistory: React.FC<UserHistoryProps> = ({ onBackToTest, onOpenAu
   const totalSeconds = history.reduce((sum, r) => sum + r.duration, 0);
   const totalMinutes = (totalSeconds / 60).toFixed(1);
 
-  if (!user) {
-    return (
-      <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        <div className="rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-8 text-center max-w-md mx-auto shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
-            <History className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-            Cloud History Requires Sign In
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
-            Sign in to automatically save every typing test session to your personal history and track your improvement over time.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => onOpenAuth && onOpenAuth('signin')}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-xs transition-all cursor-pointer"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={onBackToTest}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            >
-              Back to Test
-            </button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section id="user-history-section" className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToTest}
@@ -113,12 +116,22 @@ export const UserHistory: React.FC<UserHistoryProps> = ({ onBackToTest, onOpenAu
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white flex items-center gap-2.5">
               <span>My Typing History</span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Cloud Synced
-              </span>
+              {user ? (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Cloud Synced
+                </span>
+              ) : (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
+                  Local Guest History
+                </span>
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Logged in as <span className="font-semibold text-neutral-800 dark:text-neutral-200">{profile?.username || user.email}</span>
+              {user ? (
+                <>Logged in as <span className="font-semibold text-neutral-800 dark:text-neutral-200">{profile?.username || user.email}</span></>
+              ) : (
+                <>Guest Session • Saved on this browser</>
+              )}
             </p>
           </div>
         </div>
@@ -141,6 +154,31 @@ export const UserHistory: React.FC<UserHistoryProps> = ({ onBackToTest, onOpenAu
           </button>
         </div>
       </div>
+
+      {/* Guest Backup Prompt */}
+      {!user && (
+        <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <History className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-neutral-900 dark:text-white">
+                Save & sync your history to the cloud database
+              </p>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                You are currently viewing local tests. Sign in to permanently save your results to the database and compete on the global leaderboard.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onOpenAuth && onOpenAuth('signup')}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shrink-0 cursor-pointer shadow-xs"
+          >
+            Sign In to Sync
+          </button>
+        </div>
+      )}
 
       {/* Analytics Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 mb-8">

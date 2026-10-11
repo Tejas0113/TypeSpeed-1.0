@@ -65,7 +65,7 @@ export function saveTestResult(
 
     const existingHistoryRaw = localStorage.getItem(STORAGE_KEY_HISTORY);
     const existingHistory: TestHistoryItem[] = existingHistoryRaw ? JSON.parse(existingHistoryRaw) : [];
-    const newHistory = [historyItem, ...existingHistory].slice(0, 20); // Keep latest 20
+    const newHistory = [historyItem, ...existingHistory].slice(0, 100); // Keep latest 100
     localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newHistory));
     updatedPB.history = newHistory;
   } catch (e) {

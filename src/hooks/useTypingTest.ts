@@ -25,6 +25,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
   const [isNewRecord, setIsNewRecord] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
+  const [completedStats, setCompletedStats] = useState<TestStats | null>(null);
 
   const startTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<number | null>(null);
@@ -89,6 +90,22 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     duration,
   };
 
+  // Keep latest refs to prevent stale closure in interval
+  const userInputRef = useRef<string>('');
+  userInputRef.current = userInput;
+
+  const correctCharsRef = useRef<number>(0);
+  correctCharsRef.current = correctChars;
+
+  const incorrectCharsRef = useRef<number>(0);
+  incorrectCharsRef.current = incorrectChars;
+
+  const errorCountRef = useRef<number>(0);
+  errorCountRef.current = errorCount;
+
+  const durationRef = useRef<TestDuration>(duration);
+  durationRef.current = duration;
+
   // Complete the test
   const completeTest = useCallback(() => {
     if (timerIntervalRef.current) {
@@ -97,13 +114,32 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     }
     
     setTestState('COMPLETED');
-    const finalElapsed = duration;
-    const finalWpm = calculateWPM(correctChars, finalElapsed);
-    const finalAccuracy = calculateAccuracy(correctChars, userInput.length);
-    const finalRawWpm = calculateRawWPM(userInput.length, finalElapsed);
+    const finalElapsed = durationRef.current;
+    const finalUserInput = userInputRef.current;
+    const finalCorrect = correctCharsRef.current;
+    const finalIncorrect = incorrectCharsRef.current;
+    const finalErrors = errorCountRef.current;
+
+    const finalWpm = calculateWPM(finalCorrect, finalElapsed);
+    const finalAccuracy = calculateAccuracy(finalCorrect, finalUserInput.length);
+    const finalRawWpm = calculateRawWPM(finalUserInput.length, finalElapsed);
+
+    const completedTestStats: TestStats = {
+      wpm: finalWpm,
+      rawWpm: finalRawWpm,
+      accuracy: finalAccuracy,
+      correctChars: finalCorrect,
+      incorrectChars: finalIncorrect,
+      totalChars: finalUserInput.length,
+      errors: finalErrors,
+      timeElapsed: Math.round(finalElapsed),
+      timeRemaining: 0,
+      duration: finalElapsed,
+    };
+    setCompletedStats(completedTestStats);
     
     // Save to local storage
-    const result = saveTestResult(finalWpm, finalAccuracy, duration);
+    const result = saveTestResult(finalWpm, finalAccuracy, finalElapsed);
     setPersonalBest(result.updatedPB);
     setIsNewRecord(result.isNewHighestWpm);
     setIsCloudSynced(false);
@@ -111,18 +147,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     // If user is authenticated with Supabase, save to cloud database
     if (user) {
       dbService
-        .saveTestResult(user.id, {
-          wpm: finalWpm,
-          rawWpm: finalRawWpm,
-          accuracy: finalAccuracy,
-          correctChars,
-          incorrectChars,
-          totalChars: userInput.length,
-          errors: errorCount,
-          timeElapsed: Math.round(duration),
-          timeRemaining: 0,
-          duration,
-        })
+        .saveTestResult(user.id, completedTestStats)
         .then((saved) => {
           if (saved) {
             setIsCloudSynced(true);
@@ -141,14 +166,17 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
           }
         })
         .catch((err) => {
-          console.warn('Failed to save to Supabase:', err);
+          console.error('Failed to save to Supabase:', err);
         });
     }
     
     if (soundEnabled) {
       soundManager.playCompleteSound();
     }
-  }, [correctChars, duration, errorCount, incorrectChars, soundEnabled, user, userInput.length]);
+  }, [soundEnabled, user]);
+
+  const completeTestRef = useRef(completeTest);
+  completeTestRef.current = completeTest;
 
   // Reset test cleanly
   const resetTest = useCallback((newDuration?: TestDuration, newPassage?: Passage) => {
@@ -171,6 +199,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     setErrorCount(0);
     setIsNewRecord(false);
     setIsCloudSynced(false);
+    setCompletedStats(null);
     
     if (newPassage) {
       setPassage(newPassage);
@@ -195,16 +224,16 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
       if (!startTimeRef.current) return;
       const now = performance.now();
       const elapsed = (now - startTimeRef.current) / 1000;
-      const remaining = Math.max(0, duration - elapsed);
+      const remaining = Math.max(0, durationRef.current - elapsed);
 
       setTimeElapsed(elapsed);
       setTimeRemaining(remaining);
 
       if (remaining <= 0) {
-        completeTest();
+        completeTestRef.current();
       }
     }, 50); // 50ms interval for super fluid smooth clock updates
-  }, [completeTest, duration]);
+  }, []);
 
   // Handle typing input
   const handleInputChange = useCallback((newText: string) => {
@@ -266,7 +295,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     userInput,
     timeRemaining,
     timeElapsed,
-    stats: liveStats,
+    stats: testState === 'COMPLETED' && completedStats ? completedStats : liveStats,
     personalBest,
     isNewRecord,
     isCloudSynced,

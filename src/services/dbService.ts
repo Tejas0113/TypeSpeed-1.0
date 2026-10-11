@@ -56,13 +56,40 @@ export const dbService = {
   async saveTestResult(userId: string, stats: TestStats): Promise<DbTestResult | null> {
     if (!isSupabaseConfigured) return null;
     try {
+      // 1. Ensure profile exists in profiles table to prevent foreign key violation
+      try {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          const { data: authData } = await supabase.auth.getUser();
+          const meta = authData?.user?.user_metadata;
+          const rawName = (meta?.username || meta?.full_name || meta?.name || authData?.user?.email?.split('@')[0] || 'user')
+            .replace(/[^a-zA-Z0-9_]/g, '_')
+            .slice(0, 15);
+          const autoUsername = `${rawName}_${userId.slice(0, 4)}`;
+
+          await supabase.from('profiles').upsert({
+            id: userId,
+            username: autoUsername,
+            avatar_url: meta?.avatar_url || meta?.picture || null,
+          });
+        }
+      } catch (profileErr) {
+        console.warn('Profile ensure warning:', profileErr);
+      }
+
+      // 2. Insert test result row
       const { data, error } = await supabase
         .from('test_results')
         .insert({
           user_id: userId,
-          wpm: Math.round(stats.wpm),
-          raw_wpm: Math.round(stats.rawWpm),
-          accuracy: Number(stats.accuracy.toFixed(2)),
+          wpm: Math.max(0, Math.round(stats.wpm)),
+          raw_wpm: Math.max(0, Math.round(stats.rawWpm)),
+          accuracy: Number(Math.min(100, Math.max(0, stats.accuracy)).toFixed(2)),
           duration: stats.duration,
           correct_chars: stats.correctChars,
           incorrect_chars: stats.incorrectChars,
@@ -72,7 +99,7 @@ export const dbService = {
         .single();
 
       if (error) {
-        console.error('Error saving test result:', error.message);
+        console.error('Error saving test result to Supabase:', error.message);
         return null;
       }
 

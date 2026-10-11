@@ -8,9 +8,10 @@ import { PersonalBestCard } from './PersonalBestCard';
 
 interface TypingTestProps {
   onOpenAuth?: (mode?: 'signin' | 'signup') => void;
+  onViewHistory?: () => void;
 }
 
-export const TypingTest: React.FC<TypingTestProps> = ({ onOpenAuth }) => {
+export const TypingTest: React.FC<TypingTestProps> = ({ onOpenAuth, onViewHistory }) => {
   const {
     duration,
     testState,
@@ -75,6 +76,9 @@ export const TypingTest: React.FC<TypingTestProps> = ({ onOpenAuth }) => {
             isNewRecord={isNewRecord}
             isCloudSynced={isCloudSynced}
             onTryAgain={() => resetTest()}
+            onContinueNextTest={() => resetTest()}
+            onRetrySamePassage={() => resetTest(undefined, passage)}
+            onViewHistory={onViewHistory}
             onOpenAuth={onOpenAuth}
           />
         ) : (

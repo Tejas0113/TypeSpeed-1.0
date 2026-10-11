@@ -1,6 +1,20 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { RotateCcw, Award, CheckCircle2, XCircle, Zap, Target, Sparkles, TrendingUp, Cloud, LogIn } from 'lucide-react';
+import {
+  RotateCcw,
+  Award,
+  CheckCircle2,
+  XCircle,
+  Zap,
+  Target,
+  Sparkles,
+  TrendingUp,
+  Cloud,
+  LogIn,
+  ArrowRight,
+  History,
+  Check,
+} from 'lucide-react';
 import { TestStats, PersonalBest } from '../types';
 import { getPerformanceRating } from '../utils/typingCalculations';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +25,9 @@ interface ResultsProps {
   isNewRecord: boolean;
   isCloudSynced?: boolean;
   onTryAgain: () => void;
+  onContinueNextTest?: () => void;
+  onRetrySamePassage?: () => void;
+  onViewHistory?: () => void;
   onOpenAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
@@ -20,10 +37,14 @@ export const Results: React.FC<ResultsProps> = ({
   isNewRecord,
   isCloudSynced,
   onTryAgain,
+  onContinueNextTest,
+  onRetrySamePassage,
+  onViewHistory,
   onOpenAuth,
 }) => {
   const { user } = useAuth();
   const rating = getPerformanceRating(stats.wpm, stats.accuracy);
+  const handleContinue = onContinueNextTest || onTryAgain;
 
   useEffect(() => {
     // Fire celebratory confetti if high accuracy or new record
@@ -59,10 +80,15 @@ export const Results: React.FC<ResultsProps> = ({
                 New Personal Best!
               </span>
             )}
-            {user && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
-                <Cloud className="w-3 h-3" />
-                {isCloudSynced ? 'Saved to Supabase' : 'Syncing to Cloud...'}
+            {user ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                <Check className="w-3.5 h-3.5" />
+                Saved to Database & History
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                <Check className="w-3.5 h-3.5" />
+                Saved to History Section
               </span>
             )}
           </div>
@@ -172,17 +198,43 @@ export const Results: React.FC<ResultsProps> = ({
         </div>
       </div>
 
-      {/* Action CTA */}
+      {/* Action CTA Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        {/* Primary: Continue to Next Test */}
         <button
-          id="results-try-again-btn"
+          id="results-continue-btn"
           type="button"
-          onClick={onTryAgain}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-base bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+          onClick={handleContinue}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-base bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white shadow-lg shadow-emerald-600/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
         >
-          <RotateCcw className="w-5 h-5" />
-          <span>Try Again</span>
+          <span>Continue to Next Test</span>
+          <ArrowRight className="w-5 h-5" />
         </button>
+
+        {/* View in History */}
+        {onViewHistory && (
+          <button
+            type="button"
+            onClick={onViewHistory}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 transition-colors shadow-2xs cursor-pointer"
+          >
+            <History className="w-4 h-4 text-blue-500" />
+            <span>View in History</span>
+          </button>
+        )}
+
+        {/* Retry same passage */}
+        {onRetrySamePassage && (
+          <button
+            type="button"
+            onClick={onRetrySamePassage}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl font-medium text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+            title="Retry the same passage"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retry Same</span>
+          </button>
+        )}
       </div>
     </div>
   );
