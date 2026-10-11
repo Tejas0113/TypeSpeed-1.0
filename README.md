@@ -16,7 +16,7 @@
   <b>Test your typing speed, improve accuracy, compete on global leaderboards, and sync your statistics across all devices.</b>
 </p>
 
-[Live Demo](https://typespeed-1-0.vercel.app/) • [Features](#-features) • [Tech Stack](#-tech-stack) • [Database Architecture](#-database-architecture) • [Getting Started](#-getting-started)
+[Live Demo](https://typespeed1.vercel.app/) • [Features](#-features) • [Tech Stack](#-tech-stack) • [Database Architecture](#-database-architecture) • [Getting Started](#-getting-started)
 
 </div>
 
@@ -122,7 +122,7 @@ erDiagram
 
 ### 1. Launch the Application
 Open the live deployment in your browser:
-👉 **[Open TypeSpeed on Vercel](https://typespeed-1-0.vercel.app/)**
+👉 **[Open TypeSpeed on Vercel](https://typespeed1.vercel.app/)**
 
 ### 2. Sign In or Create an Account
 * Click **"Sign In"** in the top navigation bar.
