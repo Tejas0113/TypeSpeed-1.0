@@ -6,7 +6,11 @@ import { TypingPassage } from './TypingPassage';
 import { Results } from './Results';
 import { PersonalBestCard } from './PersonalBestCard';
 
-export const TypingTest: React.FC = () => {
+interface TypingTestProps {
+  onOpenAuth?: (mode?: 'signin' | 'signup') => void;
+}
+
+export const TypingTest: React.FC<TypingTestProps> = ({ onOpenAuth }) => {
   const {
     duration,
     testState,
@@ -15,6 +19,7 @@ export const TypingTest: React.FC = () => {
     stats,
     personalBest,
     isNewRecord,
+    isCloudSynced,
     soundEnabled,
     setSoundEnabled,
     inputRef,
@@ -24,17 +29,13 @@ export const TypingTest: React.FC = () => {
     startTimer,
   } = useTypingTest(30);
 
-  // Global keydown listener for quick restart (Tab + Enter or Escape)
+  // Global keydown listener for quick restart (Escape)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement> | KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         resetTest();
         return;
-      }
-
-      if (e.key === 'Tab') {
-        // Prevent default tab focus away and allow quick restart on Enter
       }
     },
     [resetTest]
@@ -72,7 +73,9 @@ export const TypingTest: React.FC = () => {
             stats={stats}
             personalBest={personalBest}
             isNewRecord={isNewRecord}
+            isCloudSynced={isCloudSynced}
             onTryAgain={() => resetTest()}
+            onOpenAuth={onOpenAuth}
           />
         ) : (
           <TypingPassage

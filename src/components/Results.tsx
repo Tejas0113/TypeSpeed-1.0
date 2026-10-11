@@ -1,22 +1,28 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { RotateCcw, Award, CheckCircle2, XCircle, Clock, Zap, Target, Sparkles, TrendingUp } from 'lucide-react';
+import { RotateCcw, Award, CheckCircle2, XCircle, Zap, Target, Sparkles, TrendingUp, Cloud, LogIn } from 'lucide-react';
 import { TestStats, PersonalBest } from '../types';
 import { getPerformanceRating } from '../utils/typingCalculations';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ResultsProps {
   stats: TestStats;
   personalBest: PersonalBest;
   isNewRecord: boolean;
+  isCloudSynced?: boolean;
   onTryAgain: () => void;
+  onOpenAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
 export const Results: React.FC<ResultsProps> = ({
   stats,
   personalBest,
   isNewRecord,
+  isCloudSynced,
   onTryAgain,
+  onOpenAuth,
 }) => {
+  const { user } = useAuth();
   const rating = getPerformanceRating(stats.wpm, stats.accuracy);
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export const Results: React.FC<ResultsProps> = ({
       {/* Header with Title & Badge */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200 dark:border-neutral-800">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
               {stats.duration}s Session
             </span>
@@ -51,6 +57,12 @@ export const Results: React.FC<ResultsProps> = ({
               <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full animate-bounce">
                 <Sparkles className="w-3 h-3 fill-current" />
                 New Personal Best!
+              </span>
+            )}
+            {user && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
+                <Cloud className="w-3 h-3" />
+                {isCloudSynced ? 'Saved to Supabase' : 'Syncing to Cloud...'}
               </span>
             )}
           </div>
@@ -127,6 +139,23 @@ export const Results: React.FC<ResultsProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Guest Prompt if unauthenticated */}
+      {!user && onOpenAuth && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs mb-6">
+          <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>Want to show this score on the global leaderboard and save it across devices?</span>
+          </div>
+          <button
+            onClick={() => onOpenAuth('signup')}
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In to Save</span>
+          </button>
+        </div>
+      )}
 
       {/* Personal Best Snapshot */}
       <div className="p-4 rounded-xl bg-neutral-100/70 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm mb-6">

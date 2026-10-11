@@ -4,8 +4,11 @@ import { getRandomPassage } from '../data/passages';
 import { calculateWPM, calculateRawWPM, calculateAccuracy } from '../utils/typingCalculations';
 import { saveTestResult, getPersonalBest } from '../utils/storage';
 import { soundManager } from '../utils/audio';
+import { useAuth } from '../contexts/AuthContext';
+import { dbService } from '../services/dbService';
 
 export function useTypingTest(initialDuration: TestDuration = 30) {
+  const { user } = useAuth();
   const [duration, setDuration] = useState<TestDuration>(initialDuration);
   const [testState, setTestState] = useState<TestState>('IDLE');
   const [passage, setPassage] = useState<Passage>(() => getRandomPassage());
@@ -21,12 +24,30 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
   const [personalBest, setPersonalBest] = useState(() => getPersonalBest());
   const [isNewRecord, setIsNewRecord] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+  const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
 
   const startTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const testStateRef = useRef<TestState>(testState);
   testStateRef.current = testState;
+
+  // Sync cloud personal best whenever user changes or logs in
+  useEffect(() => {
+    if (user) {
+      dbService.getUserPersonalBest(user.id).then((cloudPB) => {
+        if (cloudPB && cloudPB.testsCompleted > 0) {
+          setPersonalBest((localPB) => ({
+            highestWpm: Math.max(localPB.highestWpm, cloudPB.highestWpm),
+            bestAccuracy: Math.max(localPB.bestAccuracy, cloudPB.bestAccuracy),
+            testsCompleted: Math.max(localPB.testsCompleted, cloudPB.testsCompleted),
+            lastCompletedAt: cloudPB.lastCompletedAt || localPB.lastCompletedAt,
+            history: cloudPB.history && cloudPB.history.length > 0 ? cloudPB.history : localPB.history,
+          }));
+        }
+      });
+    }
+  }, [user]);
 
   // Sound sync
   useEffect(() => {
@@ -79,15 +100,55 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     const finalElapsed = duration;
     const finalWpm = calculateWPM(correctChars, finalElapsed);
     const finalAccuracy = calculateAccuracy(correctChars, userInput.length);
+    const finalRawWpm = calculateRawWPM(userInput.length, finalElapsed);
     
+    // Save to local storage
     const result = saveTestResult(finalWpm, finalAccuracy, duration);
     setPersonalBest(result.updatedPB);
     setIsNewRecord(result.isNewHighestWpm);
+    setIsCloudSynced(false);
+
+    // If user is authenticated with Supabase, save to cloud database
+    if (user) {
+      dbService
+        .saveTestResult(user.id, {
+          wpm: finalWpm,
+          rawWpm: finalRawWpm,
+          accuracy: finalAccuracy,
+          correctChars,
+          incorrectChars,
+          totalChars: userInput.length,
+          errors: errorCount,
+          timeElapsed: Math.round(duration),
+          timeRemaining: 0,
+          duration,
+        })
+        .then((saved) => {
+          if (saved) {
+            setIsCloudSynced(true);
+            // Refresh personal best from cloud
+            dbService.getUserPersonalBest(user.id).then((cloudPB) => {
+              if (cloudPB) {
+                setPersonalBest((prev) => ({
+                  ...prev,
+                  highestWpm: Math.max(prev.highestWpm, cloudPB.highestWpm),
+                  bestAccuracy: Math.max(prev.bestAccuracy, cloudPB.bestAccuracy),
+                  testsCompleted: cloudPB.testsCompleted,
+                  lastCompletedAt: cloudPB.lastCompletedAt || prev.lastCompletedAt,
+                }));
+              }
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('Failed to save to Supabase:', err);
+        });
+    }
     
     if (soundEnabled) {
       soundManager.playCompleteSound();
     }
-  }, [correctChars, duration, soundEnabled, userInput.length]);
+  }, [correctChars, duration, errorCount, incorrectChars, soundEnabled, user, userInput.length]);
 
   // Reset test cleanly
   const resetTest = useCallback((newDuration?: TestDuration, newPassage?: Passage) => {
@@ -109,6 +170,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     setTotalKeystrokes(0);
     setErrorCount(0);
     setIsNewRecord(false);
+    setIsCloudSynced(false);
     
     if (newPassage) {
       setPassage(newPassage);
@@ -207,6 +269,7 @@ export function useTypingTest(initialDuration: TestDuration = 30) {
     stats: liveStats,
     personalBest,
     isNewRecord,
+    isCloudSynced,
     soundEnabled,
     setSoundEnabled,
     inputRef,
