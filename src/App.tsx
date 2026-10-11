@@ -32,9 +32,14 @@ function MainLayout() {
   }, []);
 
   const handleStartTypingFromHero = useCallback(() => {
-    setActiveView('test');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    if (!user) {
+      setAuthMode('signin');
+      setAuthModalOpen(true);
+    } else {
+      setActiveView('test');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:bg-emerald-500/30 dark:selection:text-emerald-300">
@@ -121,6 +126,10 @@ function MainLayout() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         defaultMode={authMode}
+        onContinueGuest={() => {
+          setActiveView('test');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       <LeaderboardModal

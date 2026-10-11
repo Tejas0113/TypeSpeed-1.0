@@ -53,7 +53,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartClick, onOpenAuth }) => {
             className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-base bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white shadow-lg shadow-emerald-600/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
           >
             <Zap className="w-4 h-4 fill-current" />
-            <span>Enter Typing Arena</span>
+            <span>Start Typing</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
