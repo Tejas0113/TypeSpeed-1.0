@@ -116,59 +116,32 @@ erDiagram
 
 ---
 
-## 🚀 Getting Started
+## 🚀 How to Use the Live Website
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18.0 or higher)
-- [npm](https://www.npmjs.com/) or [bun](https://bun.sh/)
-- A free [Supabase](https://supabase.com) account
+**TypeSpeed** is live and ready to use in your browser. No local setup or installation required!
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/Tejas0113/TypeSpeed-1.0.git
-cd TypeSpeed-1.0
-```
+### 1. Launch the Application
+Open the live deployment in your browser:
+👉 **[Open TypeSpeed on Vercel](https://typespeed-1-0.vercel.app/)**
 
-### 2. Install Dependencies
-```bash
-npm install
-```
+### 2. Sign In or Create an Account
+* Click **"Sign In"** in the top navigation bar.
+* Choose **"Continue with Google"** for instant 1-click access, or sign up with your **Email & Password**.
+* Your personal bests, history, and leaderboard rankings are automatically tied to your account.
 
-### 3. Setup Environment Variables
-Create a `.env` file in the project root:
-```bash
-cp .env.example .env
-```
-Populate your Supabase credentials:
-```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-api-key
-```
+### 3. Take a Typing Speed Test
+* Select your preferred test duration: **15s**, **30s**, or **60s**.
+* Click into the passage area and start typing immediately — the precision clock starts on your very first keystroke.
+* Toggle keyboard sound effects on/off using the sound button in the controls bar.
 
-### 4. Run the Supabase SQL Setup Script
-1. Open your **Supabase Dashboard** → **SQL Editor**.
-2. Copy and paste the script located at `supabase/schema.sql`.
-3. Click **Run** to generate the tables, security policies, triggers, and leaderboard view.
+### 4. View Analytics & Climb the Global Leaderboard
+* Upon completing each test, view your detailed performance breakdown: **Net WPM**, **Raw WPM**, **Accuracy %**, and **Error count**.
+* High scores are automatically saved to your cloud profile in real time.
+* Click **"Leaderboard"** in the header to compare your speed with typists around the world!
 
-### 5. Start the Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 🌐 Deploying to Vercel
-
-1. Push your repository to GitHub.
-2. Import the project into your **Vercel Dashboard**.
-3. Under **Project Settings → Environment Variables**, add:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Under your **Supabase Dashboard → Authentication → URL Configuration**:
-   - Set **Site URL** to your Vercel URL (`https://your-project.vercel.app`).
-   - Add your Vercel domain to **Redirect URLs** (`https://your-project.vercel.app/**`).
-5. Deploy! Vercel will build and serve your app globally.
+### 5. Customize Your Profile
+* Click your user avatar in the header to view your tests completed and highest WPM.
+* Click the **pencil icon (✏️)** next to your username to set your custom display name on the leaderboard.
 
 ---
 
